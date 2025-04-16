@@ -17,7 +17,25 @@ string tok()
     return r; 
 }
 
+int precedence(char op) 
+{
+    if (op == '+' || op == '-') 
+    {
+        return 1;
+    }
 
+    if (op == '*' || op == '/' || op == '%')
+    {
+        return 2;
+    }
+
+    if (op == '^')
+    {
+        return 3;
+    }
+
+    return 0; 
+}
 
 int gid = 0;
 
@@ -44,27 +62,60 @@ Tree * eval_expr();
 
 Tree * eval_prim()
 {
-    // FIXME
-    return nullptr;
+    if (peek == "(")
+    {
+        tok(); // Consumes the left parenthesis '('
+        Tree* left = eval_expr();
+        tok(); // Consumes the right parenthesis ')'
+        return left;
+    }
+
+    string num = tok();
+    return new Tree(num);
 }
 
 Tree * eval_powr()
 {
-    // FIXME
-    return nullptr;
+    Tree* left = eval_prim();
+
+    while(peek == "^")
+    {
+        auto op = tok();
+        Tree* right = eval_prim();
+        left = new Tree(op, left, right);
+    }
+
+    return left;
 }
 
 Tree * eval_term()
 {
-    // FIXME
-    return nullptr;
+    Tree* left = eval_powr();
+
+    while(peek == "*" || peek == "/" || peek == "%")
+    {
+        auto op = tok();
+        Tree* right = eval_powr();
+        left = new Tree(op, left, right);
+    }
+
+    return left;
 }
 
 Tree * eval_expr()
 {
-    // FIXME
-    return nullptr;
+    Tree* left = eval_term();
+
+    while(peek == "+" || peek == "-")
+    {
+        auto op = tok();
+        Tree* right = eval_term();
+        left = new Tree(op, left, right);
+    }
+
+    return left;
 }
+
 
 int main()
 {
@@ -106,13 +157,67 @@ string Tree::str() const
 
 string Tree::edges() const
 {
-    // FIXME
-    return "";
+    string output = "";
+
+    if (left != nullptr)
+    {
+        output += str() + " --> " + left->str() + "\n";
+    }
+
+    if (right != nullptr)
+    {
+        output += str() + " --> " + right->str() + "\n";
+    }
+
+    if (left != nullptr)
+    {
+        output += left->edges();
+    }
+
+    if (right != nullptr)
+    {
+        output += right->edges();
+    }
+    
+    return output;
 }
 
 
 string Tree::expr() const
 {
-    // FIXME
-    return "";
+    string left_str, right_str;
+    
+    if (op.empty())
+    {
+        return val;
+    }
+
+    if (left != nullptr)
+    {
+        left_str = left->expr();
+    }
+
+    if (right != nullptr)
+    {
+        right_str = right->expr();
+    }
+
+
+    if (left!=nullptr && !left->op.empty() && precedence(left->op[0]) < precedence(op[0]))
+    {
+        left_str = "( " + left_str + " )";
+    }
+    
+
+    if (right != nullptr && !right->op.empty()) 
+    {
+        if (precedence(right->op[0]) < precedence(op[0]) || (precedence(right->op[0]) 
+            == precedence(op[0]) && op[0] == '^'))
+        {      
+            right_str = "( " + right_str + " )";
+        }
+    }
+
+
+    return left_str + " " + op + " " + right_str;
 }
