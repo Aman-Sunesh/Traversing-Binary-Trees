@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
@@ -55,6 +56,7 @@ struct Tree
     string str() const;
     string edges() const;
     string expr() const;
+    int compute() const;
 };
 
 
@@ -127,21 +129,54 @@ try
         if ( line[0] == '#' ) continue;
         if ( line == "end" ) break;
 
-        istringstream is(line);
+        int index = line.find("=");
+        bool flag = (index < line.size());
+
+        string left_expr, right_expr;
+
+        if (flag) 
+        {
+            left_expr  = line.substr(0, index);
+            right_expr = line.substr(index + 1);
+        }
+
+        else 
+        {
+            left_expr  = line;
+            right_expr = "";
+        }
+
+        istringstream is(left_expr);
         gis = &is; // reset input stream
         gid = 0; // reset id counter
         tok(); // load peek token
 
         Tree * tree = eval_expr();
+        int left_val = tree->compute();
 
-        cout << "```mermaid\ngraph TD\n"
-             << "A(\"" << line << "\")\n"
-             << "B(\"" << tree->expr() << "\")\n"
-             << "A --> B\n"
-             << "style A fill:#ded\n"
-             << "style B fill:#dde\n"
-             << tree->edges() << "```\n---\n";
+        if (!flag)
+        {
+            cout << tree->expr()
+             << " = "
+             << tree->compute()
+             << "\n\n";
+        }
 
+        else
+        {
+            int right_val = stoi(right_expr);
+            
+            if (left_val == right_val)
+            {
+                cout << 1 << endl;
+            }
+
+            else 
+            {
+                cout << 0 << endl;
+            }
+        }
+        
         delete tree;
     }
 }
@@ -220,4 +255,64 @@ string Tree::expr() const
 
 
     return left_str + " " + op + " " + right_str;
+}
+
+
+int Tree::compute() const
+{
+    if (op.empty())
+    {
+        return stoi(val);
+    }
+
+    else
+    {
+        int left_val = left->compute();
+        int right_val = right->compute();
+
+        if (op == "+")
+        {
+            return left_val + right_val;
+        }
+
+        else if (op == "-")
+        {
+            return left_val - right_val;
+        }
+
+        else if (op == "*")
+        {
+            return left_val * right_val;
+        }
+
+        else if (op == "/")
+        {
+            if (right_val == 0)
+            {
+                throw std::runtime_error("Error! Division by zero");
+            }
+
+            return left_val / right_val;
+        }
+
+        else if (op == "%")
+        {
+            if (right_val == 0)
+            {
+                throw std::runtime_error("Error! Modulo by zero");
+            }
+
+            return left_val % right_val;
+        }
+
+        else if (op == "^")
+        {
+            return pow(left_val, right_val);
+        }
+
+        else
+        {
+            throw runtime_error("Error! Unknown operator: " + op);
+        }
+    }
 }
